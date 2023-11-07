@@ -1,8 +1,12 @@
 package com.fabianoaono.booking.controller;
 
 import com.fabianoaono.booking.entity.Booking;
+import com.fabianoaono.booking.exception.BookingNotFoundException;
+import com.fabianoaono.booking.exception.BookingOverlapException;
 import com.fabianoaono.booking.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,22 +24,47 @@ public class BookingController {
     }
 
     @GetMapping("/{id}")
-    public Booking getBookingById(@PathVariable Long id) {
-        return bookingService.getBookingById(id).get();
+    public ResponseEntity<Booking> getBookingById(@PathVariable Long id) {
+
+        return bookingService.getBookingById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Booking createBooking(@RequestBody Booking booking) {
-        return bookingService.createBooking(booking);
+    public ResponseEntity<Object> createBooking(@RequestBody Booking booking) {
+
+        if (booking == null || booking.getStartDate() == null || booking.getEndDate() == null) {
+            return ResponseEntity.badRequest().body("Booking data is invalid.");
+        }
+
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(bookingService.createBooking(booking));
+        } catch (BookingOverlapException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Booking overlap detected: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public Booking updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
-        return bookingService.updateBooking(id, booking);
+    public ResponseEntity<Object> updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(bookingService.updateBooking(id, booking));
+        } catch (BookingOverlapException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Booking overlap detected: " + e.getMessage());
+        } catch (BookingNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking not found: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public void deleteBooking(@PathVariable Long id) {
-        bookingService.deleteBooking(id);
+    public ResponseEntity<Object> deleteBooking(@PathVariable Long id) {
+        try {
+            bookingService.deleteBooking(id);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        } catch (BookingNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Booking not found: " + e.getMessage());
+        }
     }
 }
