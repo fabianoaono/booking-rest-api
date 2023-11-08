@@ -32,13 +32,7 @@ public class BookingService {
 
     public Booking createBooking(Booking booking) throws BookingOverlapException, BookingOverlapWithBlockException {
 
-        if (hasBlockOverlap(booking)) {
-            throw new BookingOverlapWithBlockException("Booking overlaping with an existing block");
-        }
-
-        if (hasBookingOverlap(booking)) {
-            throw new BookingOverlapException("Booking overlaping with an existing booking");
-        }
+        validateBookingOverlaps(booking);
 
         return bookingRepository.save(booking);
     }
@@ -51,13 +45,7 @@ public class BookingService {
 
         booking.setId(id);
 
-        if (hasBlockOverlap(booking)) {
-            throw new BookingOverlapWithBlockException("Booking overlaping with an existing block");
-        }
-
-        if (hasBookingOverlap(booking)) {
-            throw new BookingOverlapException("Booking overlaping with an existing booking");
-        }
+        validateBookingOverlaps(booking);
 
         return bookingRepository.save(booking);
     }
@@ -71,29 +59,33 @@ public class BookingService {
         bookingRepository.deleteById(id);
     }
 
+    private void validateBookingOverlaps(Booking booking) throws BookingOverlapWithBlockException, BookingOverlapException {
+
+        if (hasBlockOverlap(booking)) {
+            throw new BookingOverlapWithBlockException("Booking overlaping with an existing block");
+        }
+
+        if (hasBookingOverlap(booking)) {
+            throw new BookingOverlapException("Booking overlaping with an existing booking");
+        }
+    }
+
     public boolean hasBookingOverlap(Booking booking) {
 
         List<Booking> existingBookings = bookingRepository.findAllByPropertyId(booking.getPropertyId());
 
-        for (Booking existingBooking : existingBookings) {
-            if (!existingBooking.getId().equals(booking.getId()) && isOverlap(existingBooking, booking)) {
-                return true;
-            }
-        }
-        return false;
+        return existingBookings.stream()
+                .anyMatch(existingBooking ->
+                        !existingBooking.getId().equals(booking.getId()) && isOverlap(existingBooking, booking)
+                );
     }
 
     private boolean hasBlockOverlap(Booking booking) {
 
         List<Block> existingBlocks = blockRepository.findAllByPropertyId(booking.getPropertyId());
 
-        for (Block existingBlock : existingBlocks) {
-            if (existingBlock.getPropertyId().equals(booking.getPropertyId()) &&
-                    isOverlap(existingBlock, booking)) {
-                return true;
-            }
-        }
-        return false;
+        return existingBlocks.stream()
+                .anyMatch(existingBlock -> isOverlap(existingBlock, booking));
     }
 
     private boolean isOverlap(Booking existingBooking, Booking newBooking) {
