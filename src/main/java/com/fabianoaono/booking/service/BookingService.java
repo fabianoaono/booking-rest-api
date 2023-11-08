@@ -10,6 +10,7 @@ import com.fabianoaono.booking.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -90,13 +91,18 @@ public class BookingService {
 
     private boolean isOverlap(Booking existingBooking, Booking newBooking) {
 
-        return existingBooking.getStartDate().before(newBooking.getEndDate()) &&
-                newBooking.getStartDate().before(existingBooking.getEndDate());
+        return hasDateOverlap(existingBooking.getStartDate(), existingBooking.getEndDate(),
+                newBooking.getStartDate(), newBooking.getEndDate());
     }
 
     private boolean isOverlap(Block existingBlock, Booking newBooking) {
 
-        return existingBlock.getStartDate().before(newBooking.getEndDate()) &&
-                newBooking.getStartDate().before(existingBlock.getEndDate());
+        return hasDateOverlap(existingBlock.getStartDate(), existingBlock.getEndDate(),
+                newBooking.getStartDate(), newBooking.getEndDate());
+    }
+
+    private boolean hasDateOverlap(Date startDate, Date endDate, Date otherStartDate, Date otherEndDate) {
+        return startDate.before(otherEndDate) &&
+                otherStartDate.before(endDate);
     }
 }
