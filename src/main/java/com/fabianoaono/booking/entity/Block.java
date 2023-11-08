@@ -11,7 +11,7 @@ import java.util.Date;
 
 @Data
 @Entity
-public class Booking {
+public class Block {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,8 +24,6 @@ public class Booking {
 
     @JsonFormat(pattern="yyyy-MM-dd")
     private Date endDate;
-
-    private Long guestId;
 }
 
 

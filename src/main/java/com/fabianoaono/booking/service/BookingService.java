@@ -1,8 +1,11 @@
 package com.fabianoaono.booking.service;
 
+import com.fabianoaono.booking.entity.Block;
 import com.fabianoaono.booking.entity.Booking;
 import com.fabianoaono.booking.exception.BookingNotFoundException;
 import com.fabianoaono.booking.exception.BookingOverlapException;
+import com.fabianoaono.booking.exception.BookingOverlapWithBlockException;
+import com.fabianoaono.booking.repository.BlockRepository;
 import com.fabianoaono.booking.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +19,9 @@ public class BookingService {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private BlockRepository blockRepository;
+
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
@@ -24,7 +30,11 @@ public class BookingService {
         return bookingRepository.findById(id);
     }
 
-    public Booking createBooking(Booking booking) throws BookingOverlapException {
+    public Booking createBooking(Booking booking) throws BookingOverlapException, BookingOverlapWithBlockException {
+
+        if (hasBlockOverlap(booking)) {
+            throw new BookingOverlapWithBlockException("Booking overlaping with an existing block");
+        }
 
         if (hasBookingOverlap(booking)) {
             throw new BookingOverlapException("Booking overlaping with an existing booking");
@@ -33,18 +43,23 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
 
-    public Booking updateBooking(Long id, Booking booking) throws BookingOverlapException, BookingNotFoundException {
+    public Booking updateBooking(Long id, Booking booking) throws BookingOverlapException, BookingNotFoundException, BookingOverlapWithBlockException {
+
         if (!bookingRepository.existsById(id)) {
             throw new BookingNotFoundException("Booking with id " + id + " does not exist");
+        }
+
+        booking.setId(id);
+
+        if (hasBlockOverlap(booking)) {
+            throw new BookingOverlapWithBlockException("Booking overlaping with an existing block");
         }
 
         if (hasBookingOverlap(booking)) {
             throw new BookingOverlapException("Booking overlaping with an existing booking");
         }
 
-        booking.setId(id);
         return bookingRepository.save(booking);
-
     }
 
     public void deleteBooking(Long id) throws BookingNotFoundException {
@@ -57,11 +72,24 @@ public class BookingService {
     }
 
     public boolean hasBookingOverlap(Booking booking) {
+
         List<Booking> existingBookings = bookingRepository.findAllByPropertyId(booking.getPropertyId());
 
         for (Booking existingBooking : existingBookings) {
-            if (existingBooking.getPropertyId().equals(booking.getPropertyId()) &&
-                    isOverlap(existingBooking, booking)) {
+            if (!existingBooking.getId().equals(booking.getId()) && isOverlap(existingBooking, booking)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasBlockOverlap(Booking booking) {
+
+        List<Block> existingBlocks = blockRepository.findAllByPropertyId(booking.getPropertyId());
+
+        for (Block existingBlock : existingBlocks) {
+            if (existingBlock.getPropertyId().equals(booking.getPropertyId()) &&
+                    isOverlap(existingBlock, booking)) {
                 return true;
             }
         }
@@ -69,7 +97,14 @@ public class BookingService {
     }
 
     private boolean isOverlap(Booking existingBooking, Booking newBooking) {
+
         return existingBooking.getStartDate().before(newBooking.getEndDate()) &&
                 newBooking.getStartDate().before(existingBooking.getEndDate());
+    }
+
+    private boolean isOverlap(Block existingBlock, Booking newBooking) {
+
+        return existingBlock.getStartDate().before(newBooking.getEndDate()) &&
+                newBooking.getStartDate().before(existingBlock.getEndDate());
     }
 }
