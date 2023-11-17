@@ -17,11 +17,16 @@ import java.util.Optional;
 @Service
 public class BookingService {
 
-    @Autowired
-    private BookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
+
+    private final BlockRepository blockRepository;
 
     @Autowired
-    private BlockRepository blockRepository;
+    public BookingService(BookingRepository bookingRepository, BlockRepository blockRepository) {
+
+        this.bookingRepository = bookingRepository;
+        this.blockRepository = blockRepository;
+    }
 
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();

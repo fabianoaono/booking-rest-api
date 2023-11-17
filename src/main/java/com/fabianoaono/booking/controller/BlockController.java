@@ -11,11 +11,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/block")
+@RequestMapping("/api/blocks")
 public class BlockController {
 
+    private final BlockService blockService;
+
     @Autowired
-    private BlockService blockService;
+    public BlockController(BlockService blockService) {
+
+        this.blockService = blockService;
+    }
 
     @GetMapping
     public List<Block> getAllBlocks() {

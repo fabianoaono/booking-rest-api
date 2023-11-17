@@ -12,8 +12,13 @@ import java.util.Optional;
 @Service
 public class BlockService {
 
+    private final BlockRepository blockRepository;
+
     @Autowired
-    private BlockRepository blockRepository;
+    public BlockService(BlockRepository blockRepository) {
+
+        this.blockRepository = blockRepository;
+    }
 
     public List<Block> getAllBlocks() {
         return blockRepository.findAll();

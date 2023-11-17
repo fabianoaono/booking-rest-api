@@ -1,10 +1,10 @@
 package com.fabianoaono.booking.controller;
 
 import com.fabianoaono.booking.entity.Booking;
+import com.fabianoaono.booking.service.BookingService;
 import com.fabianoaono.booking.exception.BookingNotFoundException;
 import com.fabianoaono.booking.exception.BookingOverlapException;
 import com.fabianoaono.booking.exception.BookingOverlapWithBlockException;
-import com.fabianoaono.booking.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,11 +13,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/booking")
+@RequestMapping("/api/bookings")
 public class BookingController {
 
+    private final BookingService bookingService;
+
     @Autowired
-    private BookingService bookingService;
+    public BookingController(BookingService bookingService) {
+
+        this.bookingService = bookingService;
+    }
 
     @GetMapping
     public List<Booking> getAllBookings() {
